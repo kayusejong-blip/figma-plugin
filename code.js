@@ -1,4 +1,4 @@
-figma.showUI(__html__, { width: 400, height: 600 });
+figma.showUI(__html__, { width: 400, height: 750 });
 
 async function createTextNode(name, text, x, y, size, isBold, r, g, b) {
     const textNode = figma.createText();
@@ -16,21 +16,30 @@ async function createTextNode(name, text, x, y, size, isBold, r, g, b) {
 figma.ui.onmessage = async (msg) => {
   if (msg.type === 'create-curation') {
     const products = msg.products;
-    let template = figma.currentPage.findOne(n => n.name === '#Template' && n.type === 'FRAME');
+    const format = msg.format || 'square';
+    const templateName = format === 'vertical' ? '#Template-Vertical' : '#Template-Square';
+    
+    let template = figma.currentPage.findOne(n => n.name === templateName && n.type === 'FRAME');
     
     if (!template) {
-        figma.notify("✨ 빈 도화지 감지! 프리미엄 템플릿을 코드로 즉석 렌더링합니다...");
+        figma.notify(`✨ 빈 도화지 감지! ${format === 'vertical' ? '세로형(1080x1920)' : '정방형(1080x1080)'} 템플릿을 자동 렌더링합니다...`);
         
         template = figma.createFrame();
-        template.name = '#Template';
+        template.name = templateName;
         template.layoutMode = 'VERTICAL';
-        template.primaryAxisSizingMode = 'AUTO';
+        template.primaryAxisSizingMode = 'FIXED';
         template.counterAxisSizingMode = 'FIXED';
-        template.resize(960, 100);
-        template.paddingLeft = 56;
-        template.paddingRight = 56;
-        template.paddingTop = 56;
-        template.paddingBottom = 72;
+        
+        if (format === 'vertical') {
+            template.resize(1080, 1920);
+        } else {
+            template.resize(1080, 1080);
+        }
+
+        template.paddingLeft = 60;
+        template.paddingRight = 60;
+        template.paddingTop = 60;
+        template.paddingBottom = 80;
         template.itemSpacing = 40;
         template.fills = [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }];
         template.cornerRadius = 48;
@@ -47,7 +56,7 @@ figma.ui.onmessage = async (msg) => {
         const imgBox = figma.createRectangle();
         imgBox.name = 'Image Area';
         imgBox.layoutAlign = 'STRETCH';
-        imgBox.resize(840, 840);
+        imgBox.layoutGrow = 1; // 1080 포맷에서 남는 높이 공간을 모두 채움
         imgBox.fills = [{ type: 'SOLID', color: { r: 0.92, g: 0.93, b: 0.95 } }];
         imgBox.cornerRadius = 24;
         template.appendChild(imgBox);
@@ -68,24 +77,24 @@ figma.ui.onmessage = async (msg) => {
         rankPill.layoutMode = 'HORIZONTAL';
         rankPill.primaryAxisSizingMode = 'AUTO';
         rankPill.counterAxisSizingMode = 'AUTO';
-        rankPill.paddingLeft = 20;
-        rankPill.paddingRight = 20;
+        rankPill.paddingLeft = 24;
+        rankPill.paddingRight = 24;
         rankPill.paddingTop = 14;
         rankPill.paddingBottom = 14;
         rankPill.cornerRadius = 100;
         rankPill.fills = [{ type: 'SOLID', color: { r: 0.25, g: 0.65, b: 0.32 } }];
-        const rankNode = await createTextNode('#rank', '1위', 0, 0, 22, true, 1, 1, 1);
+        const rankNode = await createTextNode('#rank', '1위', 0, 0, 24, true, 1, 1, 1);
         rankPill.appendChild(rankNode);
         contentBlock.appendChild(rankPill);
 
         // [상품명]
-        const nameNode = await createTextNode('#product_name', '[브랜드] 프리미엄 상품명 명시', 0, 0, 48, true, 0.1, 0.12, 0.15);
+        const nameNode = await createTextNode('#product_name', '[브랜드] 프리미엄 상품명 명시', 0, 0, 52, true, 0.1, 0.12, 0.15);
         nameNode.layoutAlign = 'STRETCH';
         nameNode.textAutoResize = 'HEIGHT';
         contentBlock.appendChild(nameNode);
 
         // [마케팅 카피]
-        const descNode = await createTextNode('#description', '상품을 사야 하는 매력적인 이유가 이곳에 적힙니다.\n깔끔하고 모던한 감성으로 시선을 사로잡아 보세요.', 0, 0, 26, false, 0.4, 0.45, 0.5);
+        const descNode = await createTextNode('#description', '상품을 사야 하는 매력적인 이유가 이곳에 적힙니다.\n깔끔하고 모던한 감성으로 시선을 사로잡아 보세요.', 0, 0, 28, false, 0.4, 0.45, 0.5);
         descNode.lineHeight = { value: 160, unit: 'PERCENT' };
         descNode.layoutAlign = 'STRETCH';
         descNode.textAutoResize = 'HEIGHT';

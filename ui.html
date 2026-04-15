@@ -69,6 +69,18 @@
     <label for="topic">큐레이션 주제</label>
     <input type="text" id="topic" placeholder="예: 봄맞이 자취생 꿀템 Top 5" value="직장인 피로회복 꿀템 Top 5" />
 
+    <label for="format">이미지 포맷 (프레임 사이즈)</label>
+    <select id="format">
+        <option value="square">인스타그램 정방형 (1080 x 1080)</option>
+        <option value="vertical">틱톡/쇼츠 세로형 (1080 x 1920)</option>
+    </select>
+
+    <label for="descLength">소구점문구(설명) 길이</label>
+    <select id="descLength">
+        <option value="short">핵심만 짧게 (1~2줄 요약)</option>
+        <option value="long">상세하게 풀어서 (4~5줄, 긴 설득력)</option>
+    </select>
+
     <label for="apikey">Google Gemini API Key (무료)</label>
     <input type="password" id="apikey" placeholder="AI Studio에서 발급받은 키 입력" />
 
@@ -76,12 +88,14 @@
     <div id="statusMsg" class="status"></div>
     
     <div class="note">
-        * 피그마 도화지 안에 이름이 <strong>#Template</strong>인 프레임 하나(텍스트 속성: #rank, #product_name, #description)가 준비되어 있어야 자동 파밍이 작동합니다.
+        * 피그마 도화지에 <strong>#Template-Square</strong> 또는 <strong>#Template-Vertical</strong> 이름의 프레임이 준비되어 있어야 자동 파밍이 작동합니다.
     </div>
 
     <script>
         document.getElementById('generateBtn').onclick = async () => {
             const topic = document.getElementById('topic').value;
+            const format = document.getElementById('format').value;
+            const descLength = document.getElementById('descLength').value;
             const apikey = document.getElementById('apikey').value;
             const btn = document.getElementById('generateBtn');
             const statusMsg = document.getElementById('statusMsg');
@@ -96,15 +110,19 @@
             statusMsg.innerText = '(최신 2.5 버전 AI 모델 호출 중...)';
 
             try {
+                const descPrompt = descLength === 'long' 
+                    ? "이 제품을 꼭 사야 하는 이유를 4~5줄 정도 분량으로 상세하고 설득력 있게 적어주세요. 장점과 마케팅 소구점을 구체적으로 서술해야 합니다." 
+                    : "이 제품을 꼭 사야 하는 이유 (1~2줄로 짧고 임팩트 있게)";
+
                 // 제미나이에게 내릴 프롬프트 작성 (JSON 요구)
-                const prompt = `제휴 마케팅을 위한 인스타그램 카드뉴스를 기획합니다.
+                const prompt = `제휴 마케팅을 위한 ${format === 'square' ? '인스타그램' : '릴스/쇼츠'} 카드뉴스를 기획합니다.
 주제: ${topic}
 반드시 가장 잘 팔릴 것 같은 제품들만 선정해서 아래의 JSON 배열 형식을 무조건 지켜 대답해 주세요. (가장 바깥쪽 괄호는 [ ] 여야 합니다. 백틱이나 마크다운 없이 순수 JSON만 출력하세요.)
 [
   {
     "rank": "1위",
     "product_name": "[브랜드] 매력적인 상품 이름",
-    "description": "이 제품을 꼭 사야 하는 이유 (짧고 임팩트 있게)"
+    "description": "${descPrompt}"
   }
 ]`;
 
@@ -132,7 +150,7 @@
                 statusMsg.innerText = '응답 성공! 템플릿 생성 지시를 내립니다...';
                 
                 // 피그마 메인 스레드(code.js)로 상품 데이터 발송
-                parent.postMessage({ pluginMessage: { type: 'create-curation', products: products } }, '*');
+                parent.postMessage({ pluginMessage: { type: 'create-curation', products: products, format: format } }, '*');
 
             } catch (e) {
                 // 에러 발생 시 UI에 즉시 노출
